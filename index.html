@@ -114,110 +114,189 @@ document.getElementById('menuRename').onclick = () => {
 // Toggle Edit/View
 toggleBtn.onclick=()=>{ editMode=!editMode; toggleBtn.textContent=editMode?'Switch to View':'Switch to Edit'; renderFormFields(); }
 
-// Render Fields
-function renderFormFields(){
-  const form=forms[activeIndex]; if(!form.groups) form.groups=[];
-  fieldsContainer.innerHTML='';
-  addGroupBtn.style.display=editMode?'block':'none';
-  toggleBtn.style.display=editMode?'block':'block';
+function renderFormFields() {
+  const form = forms[activeIndex];
+  if(!form.groups) form.groups = [];
+  fieldsContainer.innerHTML = '';
+  addGroupBtn.style.display = editMode ? 'block' : 'none';
 
-  form.groups.forEach((group,gIdx)=>{
-    const groupEl=document.createElement('div');
-    groupEl.className='field-group '+(group.layout||'column');
-    groupEl.dataset.groupIndex=gIdx;
+  form.groups.forEach((group, gIdx) => {
+    const groupEl = document.createElement('div');
+    groupEl.className = 'field-group';
+    groupEl.dataset.groupIndex = gIdx;
+
+// Заголовок группы
+const titleEl = document.createElement(editMode ? 'input' : 'div');
+if(editMode){
+  titleEl.type = 'text';
+  titleEl.value = group.label || '';
+  titleEl.placeholder = 'Group Title';
+  titleEl.style.width = '100%';
+  titleEl.style.marginBottom = '5px';
+  titleEl.style.boxSizing = 'border-box';
+  titleEl.oninput = () => { group.label = titleEl.value; saveForms(); };
+} else {
+  titleEl.textContent = group.label || '';
+  titleEl.style.fontWeight = 'bold';
+  titleEl.style.width = '100%';
+  titleEl.style.marginBottom = '5px';
+}
+groupEl.appendChild(titleEl);
+
+// Контейнер для полей
+const groupContent = document.createElement('div');
+groupContent.style.display = 'flex';
+groupContent.style.flexDirection = group.layout || 'column';
+groupContent.style.flexWrap = 'wrap';
+groupContent.style.gap = '10px';
+groupContent.style.width = '100%'; // ключевой момент для column
+groupEl.appendChild(groupContent);
+
 
     if(editMode){
-      const layoutSelect=document.createElement('select');
-      ['row','column'].forEach(l=>{ const opt=document.createElement('option'); opt.value=l; opt.textContent=l; if(l===group.layout) opt.selected=true; layoutSelect.appendChild(opt); });
-      layoutSelect.onchange=()=>{ group.layout=layoutSelect.value; saveForms(); renderFormFields(); };
+      // Layout select
+      const layoutSelect = document.createElement('select');
+      ['row','column'].forEach(l=>{
+        const opt = document.createElement('option');
+        opt.value = l;
+        opt.textContent = l;
+        if(l === group.layout) opt.selected = true;
+        layoutSelect.appendChild(opt);
+      });
+      layoutSelect.onchange = () => { group.layout = layoutSelect.value; saveForms(); renderFormFields(); };
       groupEl.appendChild(layoutSelect);
 
-      const delGroupBtn=document.createElement('button'); delGroupBtn.textContent='Delete Group'; delGroupBtn.className='deleteGroupBtn';
-      delGroupBtn.onclick=()=>{ form.groups.splice(gIdx,1); saveForms(); renderFormFields(); };
+      // Delete group
+      const delGroupBtn = document.createElement('button');
+      delGroupBtn.textContent = 'Delete Group';
+      delGroupBtn.className = 'deleteGroupBtn';
+      delGroupBtn.onclick = () => { form.groups.splice(gIdx,1); saveForms(); renderFormFields(); };
       groupEl.appendChild(delGroupBtn);
 
-      groupEl.draggable=true;
-      groupEl.addEventListener('dragstart', e=>{ e.dataTransfer.setData('text/plain','group-'+gIdx); });
-      groupEl.addEventListener('dragover', e=>{ e.preventDefault(); groupEl.style.border='2px dashed #888'; });
-      groupEl.addEventListener('dragleave', e=>{ groupEl.style.border='1px dashed #aaa'; });
-      groupEl.addEventListener('drop', e=>{
+      // Drag & drop for group
+      groupEl.draggable = true;
+      groupEl.addEventListener('dragstart', e => { e.dataTransfer.setData('text/plain','group-'+gIdx); });
+      groupEl.addEventListener('dragover', e => { e.preventDefault(); groupEl.style.border='2px dashed #888'; });
+      groupEl.addEventListener('dragleave', e => { groupEl.style.border='1px dashed #aaa'; });
+      groupEl.addEventListener('drop', e => {
         e.preventDefault(); groupEl.style.border='1px dashed #aaa';
-        const data=e.dataTransfer.getData('text/plain'); if(data.startsWith('group-')){
-          const fromIdx=parseInt(data.split('-')[1]); if(fromIdx===gIdx) return;
-          const moved=form.groups.splice(fromIdx,1)[0]; form.groups.splice(gIdx,0,moved); saveForms(); renderFormFields();
+        const data = e.dataTransfer.getData('text/plain');
+        if(data.startsWith('group-')){
+          const fromIdx = parseInt(data.split('-')[1]);
+          if(fromIdx === gIdx) return;
+          const moved = form.groups.splice(fromIdx,1)[0];
+          form.groups.splice(gIdx,0,moved);
+          saveForms(); renderFormFields();
         }
       });
     }
 
-    // Fields inside group
-    group.fields.forEach((field,idx)=>{
-      const fieldEl=document.createElement('div'); fieldEl.className='field'; fieldEl.dataset.index=idx;
+    // Поля
+    group.fields.forEach((field, idx) => {
+      const fieldEl = document.createElement('div');
+      fieldEl.className = 'field';
+      fieldEl.dataset.index = idx;
 
       if(editMode){
-        const idInput=document.createElement('input'); idInput.type='text'; idInput.value=field.id||`field_${Date.now()}`; field.id=idInput.value; idInput.placeholder='Field ID';
-        idInput.oninput=()=>{ field.id=idInput.value; saveForms(); }; fieldEl.appendChild(idInput);
+        const idInput = document.createElement('input');
+        idInput.type = 'text';
+        idInput.value = field.id || `field_${Date.now()}`;
+        field.id = idInput.value;
+        idInput.placeholder = 'Field ID';
+        idInput.oninput = () => { field.id = idInput.value; saveForms(); };
+        fieldEl.appendChild(idInput);
       }
 
       if(editMode){
-        const nameInput=document.createElement('input'); nameInput.type='text'; nameInput.value=field.placeholder||''; nameInput.placeholder='Field Name';
-        nameInput.oninput=e=>{ field.placeholder=e.target.value; saveForms(); };
+        const nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.value = field.placeholder || '';
+        nameInput.placeholder = 'Field Name';
+        nameInput.oninput = e => { field.placeholder = e.target.value; saveForms(); };
         fieldEl.appendChild(nameInput);
-      } else { const label=document.createElement('label'); label.textContent=field.placeholder||'Untitled'; fieldEl.appendChild(label); }
+      } else {
+        const label = document.createElement('label');
+        label.textContent = field.placeholder || 'Untitled';
+        fieldEl.appendChild(label);
+      }
 
       if(editMode){
-        const typeSelect=document.createElement('select'); ['plain text','date','list'].forEach(t=>{ const opt=document.createElement('option'); opt.value=t; opt.textContent=t; if(t===field.type) opt.selected=true; typeSelect.appendChild(opt); });
-        typeSelect.onchange=()=>{ field.type=typeSelect.value; if(field.type==='list'&&!field.options) field.options=[]; saveForms(); renderFormFields(); };
+        const typeSelect = document.createElement('select');
+        ['plain text','date','list'].forEach(t=>{
+          const opt = document.createElement('option');
+          opt.value = t; opt.textContent = t;
+          if(t===field.type) opt.selected = true;
+          typeSelect.appendChild(opt);
+        });
+        typeSelect.onchange = () => { field.type = typeSelect.value; if(field.type==='list'&&!field.options) field.options=[]; saveForms(); renderFormFields(); };
         fieldEl.appendChild(typeSelect);
       }
 
-      // Default / Value
+      // Значения
       if(field.type==='list'){
         if(editMode){
-          const optionsContainer=document.createElement('div'); optionsContainer.style.marginTop='5px';
+          const optionsContainer = document.createElement('div');
+          optionsContainer.style.marginTop = '5px';
           field.options.forEach((opt,optIdx)=>{
-            const optDiv=document.createElement('div'); optDiv.style.display='flex'; optDiv.style.marginBottom='2px';
-            const optInput=document.createElement('input'); optInput.type='text'; optInput.value=opt; optInput.placeholder='Option'; optInput.style.flex='1';
-            optInput.oninput=()=>{ field.options[optIdx]=optInput.value; saveForms(); };
-            const delOptBtn=document.createElement('button'); delOptBtn.textContent='x'; delOptBtn.onclick=()=>{ field.options.splice(optIdx,1); saveForms(); renderFormFields(); };
+            const optDiv = document.createElement('div');
+            optDiv.style.display='flex'; optDiv.style.marginBottom='2px';
+            const optInput = document.createElement('input');
+            optInput.type='text'; optInput.value=opt; optInput.placeholder='Option'; optInput.style.flex='1';
+            optInput.oninput = ()=>{ field.options[optIdx]=optInput.value; saveForms(); };
+            const delOptBtn = document.createElement('button'); delOptBtn.textContent='x'; delOptBtn.onclick = ()=>{ field.options.splice(optIdx,1); saveForms(); renderFormFields(); };
             optDiv.appendChild(optInput); optDiv.appendChild(delOptBtn); optionsContainer.appendChild(optDiv);
           });
-          const addOptionBtn=document.createElement('button'); addOptionBtn.textContent='+ Add Option'; addOptionBtn.onclick=()=>{ field.options.push(''); saveForms(); renderFormFields(); };
+          const addOptionBtn = document.createElement('button'); addOptionBtn.textContent='+ Add Option';
+          addOptionBtn.onclick = ()=>{ field.options.push(''); saveForms(); renderFormFields(); };
           optionsContainer.appendChild(addOptionBtn);
           fieldEl.appendChild(optionsContainer);
         } else {
-          const selectEl=document.createElement('select'); field.options.forEach(o=>{ const opt=document.createElement('option'); opt.value=o; opt.textContent=o; selectEl.appendChild(opt); });
+          const selectEl = document.createElement('select');
+          field.options.forEach(o=>{ const opt=document.createElement('option'); opt.value=o; opt.textContent=o; selectEl.appendChild(opt); });
           fieldEl.appendChild(selectEl);
         }
       } else {
-        const valInput=document.createElement('input'); valInput.type=field.type==='date'?'date':'text'; valInput.value=field.default||''; valInput.placeholder='Default Value';
-        valInput.oninput=()=>{ field.default=valInput.value; saveForms(); };
+        const valInput = document.createElement('input');
+        valInput.type = field.type==='date'?'date':'text';
+        valInput.value = field.default||'';
+        valInput.placeholder = 'Default Value';
+        valInput.oninput = ()=>{ field.default = valInput.value; saveForms(); };
         fieldEl.appendChild(valInput);
       }
 
       if(editMode){
-        const delBtn=document.createElement('button'); delBtn.textContent='Delete Field'; delBtn.onclick=()=>{ group.fields.splice(idx,1); saveForms(); renderFormFields(); }; fieldEl.appendChild(delBtn);
+        const delBtn = document.createElement('button'); delBtn.textContent='Delete Field';
+        delBtn.onclick = ()=>{ group.fields.splice(idx,1); saveForms(); renderFormFields(); };
+        fieldEl.appendChild(delBtn);
 
+        // Drag & drop for field inside group
         fieldEl.draggable=true;
         fieldEl.addEventListener('dragstart', e=>{ e.dataTransfer.setData('text/plain','field-'+gIdx+'-'+idx); });
         fieldEl.addEventListener('dragover', e=>{ e.preventDefault(); fieldEl.style.border='2px dashed #888'; });
         fieldEl.addEventListener('dragleave', e=>{ fieldEl.style.border='1px solid #ccc'; });
         fieldEl.addEventListener('drop', e=>{
           e.preventDefault(); fieldEl.style.border='1px solid #ccc';
-          const data=e.dataTransfer.getData('text/plain'); if(!data.startsWith('field-')) return;
-          const [_,fromG,fromIdx]=data.split('-').map(Number); if(fromG===gIdx && fromIdx===idx) return;
-          const moved=form.groups[fromG].fields.splice(fromIdx,1)[0]; form.groups[gIdx].fields.splice(idx,0,moved); saveForms(); renderFormFields();
+          const data = e.dataTransfer.getData('text/plain');
+          if(!data.startsWith('field-')) return;
+          const [_,fromG,fromIdx]=data.split('-').map(Number);
+          if(fromG===gIdx && fromIdx===idx) return;
+          const moved = form.groups[fromG].fields.splice(fromIdx,1)[0];
+          form.groups[gIdx].fields.splice(idx,0,moved);
+          saveForms(); renderFormFields();
         });
       }
 
-      groupEl.appendChild(fieldEl);
+      groupContent.appendChild(fieldEl);
     });
 
+    // Добавление нового поля в группу
     if(editMode){
-      const addFieldBtn=document.createElement('button'); addFieldBtn.textContent='+ Add Field'; addFieldBtn.className='addFieldBtn';
-      addFieldBtn.onclick=()=>{ group.fields.push({ id:`field_${Date.now()}`, placeholder:'', type:'plain text', options:[], default:'' }); saveForms(); renderFormFields(); };
-      groupEl.appendChild(addFieldBtn);
+      const addFieldBtn = document.createElement('button'); addFieldBtn.textContent='+ Add Field';
+      addFieldBtn.onclick = () => { group.fields.push({ id:`field_${Date.now()}`, placeholder:'', type:'plain text', options:[], default:'' }); saveForms(); renderFormFields(); };
+      groupContent.appendChild(addFieldBtn);
     }
 
+    groupEl.appendChild(groupContent);
     fieldsContainer.appendChild(groupEl);
   });
 }
