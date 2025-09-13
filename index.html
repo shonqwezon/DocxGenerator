@@ -187,64 +187,113 @@ function renderFormFields() {
   fieldsContainer.innerHTML='';
 
   form.fields.forEach((field, idx)=>{
-    const fieldEl=document.createElement('div');
-    fieldEl.className='field';
-    fieldEl.dataset.index=field.index??idx;
-    fieldEl.draggable=true;
+    const fieldEl = document.createElement('div');
+    fieldEl.className = 'field';
+    fieldEl.dataset.index = field.index ?? idx;
+    fieldEl.draggable = true;
 
     // Drag events
     fieldEl.addEventListener('dragstart', e => { e.dataTransfer.setData('text/plain', idx); });
     fieldEl.addEventListener('dragover', e => { e.preventDefault(); fieldEl.style.border='2px dashed #888'; });
     fieldEl.addEventListener('dragleave', e => { fieldEl.style.border='1px solid #ccc'; });
     fieldEl.addEventListener('drop', e=>{
-      e.preventDefault(); fieldEl.style.border='1px solid #ccc';
-      const fromIdx=parseInt(e.dataTransfer.getData('text/plain'));
-      if(fromIdx===idx) return;
-      const moved=form.fields.splice(fromIdx,1)[0];
-      form.fields.splice(idx,0,moved);
-      saveForms();
-      renderFormFields();
+        e.preventDefault();
+        fieldEl.style.border='1px solid #ccc';
+        const fromIdx = parseInt(e.dataTransfer.getData('text/plain'));
+        if(fromIdx === idx) return;
+        const moved = form.fields.splice(fromIdx,1)[0];
+        form.fields.splice(idx,0,moved);
+        saveForms();
+        renderFormFields();
     });
 
-    // hidden id
-    const idInput=document.createElement('input'); idInput.type='hidden'; idInput.value=field.id??`field_${Date.now()}_${idx}`; field.id=idInput.value;
+    // Editable ID
+    const idInput = document.createElement('input');
+    idInput.type = 'text';
+    idInput.value = field.id ?? `field_${Date.now()}_${idx}`;
+    field.id = idInput.value;
+    idInput.placeholder = 'Field ID';
+    idInput.oninput = () => { field.id = idInput.value; saveForms(); }
 
-    // placeholder
-    const placeholderInput=document.createElement('input');
-    placeholderInput.type='text'; placeholderInput.value=field.placeholder||''; placeholderInput.placeholder='Field Name';
-    placeholderInput.oninput=()=>{field.placeholder=placeholderInput.value; saveForms();}
+    // Placeholder
+    const placeholderInput = document.createElement('input');
+    placeholderInput.type = 'text';
+    placeholderInput.value = field.placeholder || '';
+    placeholderInput.placeholder = 'Field Name';
+    placeholderInput.oninput = () => { field.placeholder = placeholderInput.value; saveForms(); }
 
-    // type
-    const typeSelect=document.createElement('select');
-    ['plain text','date','number','list'].forEach(t=>{ const opt=document.createElement('option'); opt.value=t; opt.textContent=t; if(t===field.type) opt.selected=true; typeSelect.appendChild(opt); });
-    typeSelect.onchange=()=>{ field.type=typeSelect.value; if(field.type==='list'&&!field.options) field.options=[]; saveForms(); renderFormFields(); }
+    // Default Value
+    const defaultInput = document.createElement('input');
+    defaultInput.type = 'text';
+    defaultInput.value = field.default ?? '';
+    defaultInput.placeholder = 'Default Value';
+    defaultInput.oninput = () => { field.default = defaultInput.value; saveForms(); }
 
+    // Type
+const typeSelect = document.createElement('select');
+['plain text','date','list'].forEach(t=>{
+    const opt = document.createElement('option');
+    opt.value = t;
+    opt.textContent = t;
+    if(t === field.type) opt.selected = true;
+    typeSelect.appendChild(opt);
+});
+typeSelect.onchange = () => {
+    field.type = typeSelect.value;
+    if(field.type==='list'&&!field.options) field.options=[];
+    saveForms();
+    renderFormFields();
+}
+
+// Update input types based on field.type
+if(field.type==='date'){
+    defaultInput.type = 'date'; // используем встроенный календарик
+    defaultInput.value = field.default || '';
+    defaultInput.oninput = () => {
+        field.default = defaultInput.value; // сохраняем выбранную дату
+        saveForms();
+    };
+} else {
+    defaultInput.type = 'text';
+    defaultInput.oninput = () => { field.default = defaultInput.value; saveForms(); }
+}
+
+
+    // Append inputs
     fieldEl.appendChild(idInput);
     fieldEl.appendChild(placeholderInput);
+    fieldEl.appendChild(defaultInput);
     fieldEl.appendChild(typeSelect);
 
-    // list options
+    // List options
     if(field.type==='list'){
-      const optionsContainer=document.createElement('div'); optionsContainer.style.marginTop='5px'; field.options=field.options||[];
-      field.options.forEach((optValue,optIdx)=>{
-        const optDiv=document.createElement('div'); optDiv.style.display='flex'; optDiv.style.marginBottom='2px';
-        const optInput=document.createElement('input'); optInput.type='text'; optInput.value=optValue; optInput.placeholder='Option'; optInput.style.flex='1';
-        optInput.oninput=()=>{ field.options[optIdx]=optInput.value; saveForms(); }
-        const delOptBtn=document.createElement('button'); delOptBtn.textContent='x';
-        delOptBtn.onclick=()=>{ field.options.splice(optIdx,1); saveForms(); renderFormFields(); }
-        optDiv.appendChild(optInput); optDiv.appendChild(delOptBtn); optionsContainer.appendChild(optDiv);
-      });
-      const addOptBtn=document.createElement('button'); addOptBtn.textContent='+ Add Option'; addOptBtn.onclick=()=>{ field.options.push(''); saveForms(); renderFormFields(); }
-      optionsContainer.appendChild(addOptBtn); fieldEl.appendChild(optionsContainer);
+        const optionsContainer = document.createElement('div');
+        optionsContainer.style.marginTop='5px';
+        field.options = field.options || [];
+        field.options.forEach((optValue,optIdx)=>{
+            const optDiv = document.createElement('div');
+            optDiv.style.display='flex'; optDiv.style.marginBottom='2px';
+            const optInput = document.createElement('input');
+            optInput.type='text'; optInput.value=optValue; optInput.placeholder='Option'; optInput.style.flex='1';
+            optInput.oninput = () => { field.options[optIdx] = optInput.value; saveForms(); }
+            const delOptBtn = document.createElement('button'); delOptBtn.textContent='x';
+            delOptBtn.onclick = () => { field.options.splice(optIdx,1); saveForms(); renderFormFields(); }
+            optDiv.appendChild(optInput); optDiv.appendChild(delOptBtn); optionsContainer.appendChild(optDiv);
+        });
+        const addOptBtn = document.createElement('button');
+        addOptBtn.textContent='+ Add Option';
+        addOptBtn.onclick = () => { field.options.push(''); saveForms(); renderFormFields(); }
+        optionsContainer.appendChild(addOptBtn);
+        fieldEl.appendChild(optionsContainer);
     }
 
-    // delete field
-    const delBtn=document.createElement('button'); delBtn.textContent='Delete Field'; delBtn.style.marginTop='5px';
-    delBtn.onclick=()=>{ form.fields.splice(idx,1); saveForms(); renderFormFields(); }
+    // Delete Field
+    const delBtn = document.createElement('button'); delBtn.textContent='Delete Field'; delBtn.style.marginTop='5px';
+    delBtn.onclick = () => { form.fields.splice(idx,1); saveForms(); renderFormFields(); }
     fieldEl.appendChild(delBtn);
 
     fieldsContainer.appendChild(fieldEl);
-  });
+});
 }
 
 function addField() {
