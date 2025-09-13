@@ -1,16 +1,174 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
-    <title>Hello World!</title>
-    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';" />
+  <meta charset="UTF-8">
+  <title>Docx Generator</title>
+  <style>
+    body { display: flex; height: 100vh; margin: 0; font-family: sans-serif; }
+
+    /* Сайдбар */
+    #sidebar {
+      width: 200px;
+      background: #f0f0f0;
+      padding: 10px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* Кнопка Add Form */
+    #addForm {
+      width: 100%;
+      padding: 5px 0;
+      border-radius: 8px;
+      border: 1px solid #888;
+      background-color: #eee;
+      cursor: pointer;
+      margin-bottom: 5px;
+      transition: background-color 0.2s;
+      text-align: center;
+    }
+
+    #addForm:hover {
+      background-color: #ddd;
+      border-color: #555;
+    }
+
+    /* Список вкладок */
+    #tabs {
+      margin-top: 10px;
+      width: 100%;
+      flex: 1;
+      overflow-y: auto; /* прокрутка только вкладок */
+    }
+
+    .tab {
+      padding: 3px 5px;
+      cursor: pointer;
+      margin-bottom: 2px;
+      background: #ddd;
+      font-size: 12px;
+      text-align: center;
+      border-radius: 3px;
+      transition: background-color 0.2s;
+    }
+
+    .tab.active { background: #bbb; }
+    .tab:hover { background-color: #ccc; }
+
+    /* Основная форма */
+    #forms {
+      flex: 1;
+      padding: 10px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #formTitle {
+      width: 100%;
+      margin-bottom: 5px;
+    }
+
+    #formData {
+      flex: 1;
+      width: 100%;
+      resize: none;
+    }
+
+    input, textarea {
+      box-sizing: border-box;
+      padding: 5px;
+      font-size: 14px;
+    }
+  </style>
 </head>
 <body>
-    <h1>Hello World!</h1>
-    <p>
-        We are using Node.js <span id="node-version"></span>,
-        Chromium <span id="chrome-version"></span>,
-        and Electron <span id="electron-version"></span>.
-    </p>
+  <div id="sidebar">
+    <button id="addForm">+ Add Form</button>
+    <div id="tabs"></div>
+  </div>
+
+  <div id="forms">
+    <input type="text" id="formTitle" placeholder="Form title" maxlength="20">
+    <textarea id="formData" rows="10" placeholder="Form data" maxlength="500"></textarea>
+  </div>
+
+  <script>
+    const tabsEl = document.getElementById('tabs')
+    const addBtn = document.getElementById('addForm')
+    const titleInput = document.getElementById('formTitle')
+    const dataInput = document.getElementById('formData')
+
+    let forms = window.storage.load('forms') || []
+    let activeIndex = 0
+
+    function renderTabs() {
+    tabsEl.innerHTML = ''
+    forms.forEach((f, i) => {
+        const tab = document.createElement('div')
+        tab.className = 'tab' + (i === activeIndex ? ' active' : '')
+        tab.innerText = f.title || 'Untitled'  // показываем полностью
+        tab.title = f.title  // подсказка при наведении остаётся
+        tab.onclick = () => switchForm(i)
+        tab.oncontextmenu = (e) => { e.preventDefault(); deleteForm(i) }
+        tabsEl.appendChild(tab)
+    })
+    }
+
+    function saveForms() {
+      window.storage.save('forms', forms)
+    }
+
+    function saveCurrentForm() {
+      if (forms[activeIndex]) {
+        forms[activeIndex].title = titleInput.value
+        forms[activeIndex].data = dataInput.value
+        saveForms()
+      }
+    }
+
+    function loadForm() {
+      if (forms[activeIndex]) {
+        titleInput.value = forms[activeIndex].title
+        dataInput.value = forms[activeIndex].data
+      } else {
+        titleInput.value = ''
+        dataInput.value = ''
+      }
+    }
+
+    function addForm() {
+      saveCurrentForm()
+      forms.push({ title: 'New Form', data: '' })
+      activeIndex = forms.length - 1
+      loadForm()
+      renderTabs()
+    }
+
+    function deleteForm(index) {
+      forms.splice(index, 1)
+      if (activeIndex >= forms.length) activeIndex = forms.length - 1
+      loadForm()
+      renderTabs()
+      saveForms()
+    }
+
+    function switchForm(index) {
+      saveCurrentForm()
+      activeIndex = index
+      loadForm()
+      renderTabs()
+    }
+
+    addBtn.onclick = addForm
+    titleInput.oninput = saveCurrentForm
+    dataInput.oninput = saveCurrentForm
+
+    // начальная отрисовка
+    if (forms.length === 0) addForm()
+    else { loadForm(); renderTabs() }
+  </script>
 </body>
 </html>

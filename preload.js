@@ -1,10 +1,10 @@
-window.addEventListener('DOMContentLoaded', () => {
-  const replaceText = (selector, text) => {
-    const element = document.getElementById(selector)
-    if (element) element.innerText = text
-  }
+const { contextBridge } = require('electron')
 
-  for (const type of ['chrome', 'node', 'electron']) {
-    replaceText(`${type}-version`, process.versions[type])
+// expose simple storage API to renderer
+contextBridge.exposeInMainWorld('storage', {
+  save: (key, value) => localStorage.setItem(key, JSON.stringify(value)),
+  load: (key) => {
+    const data = localStorage.getItem(key)
+    return data ? JSON.parse(data) : null
   }
 })
