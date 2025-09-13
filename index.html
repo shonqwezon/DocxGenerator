@@ -2,11 +2,9 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Multi-Form App</title>
+  <title>Multi-Form Survey Builder</title>
   <style>
     body { display: flex; height: 100vh; margin: 0; font-family: sans-serif; }
-
-    /* Сайдбар */
     #sidebar {
       width: 200px;
       background: #f0f0f0;
@@ -16,8 +14,6 @@
       flex-direction: column;
       align-items: center;
     }
-
-    /* Кнопка Add Form */
     #addForm {
       width: 100%;
       padding: 5px 0;
@@ -26,20 +22,15 @@
       background-color: #eee;
       cursor: pointer;
       margin-bottom: 5px;
-      transition: background-color 0.2s;
       text-align: center;
+      transition: background-color 0.2s;
     }
-    #addForm:hover {
-      background-color: #ddd;
-      border-color: #555;
-    }
-
-    /* Список вкладок */
+    #addForm:hover { background-color: #ddd; border-color: #555; }
     #tabs {
       margin-top: 10px;
       width: 100%;
       flex: 1;
-      overflow-y: auto; /* прокрутка только вкладок */
+      overflow-y: auto;
     }
     .tab {
       padding: 3px 5px;
@@ -53,50 +44,36 @@
     }
     .tab.active { background: #bbb; }
     .tab:hover { background-color: #ccc; }
-
-    /* Основная форма */
     #forms {
       flex: 1;
       padding: 10px;
-      overflow: hidden;
+      overflow-y: auto;
       display: flex;
       flex-direction: column;
     }
-    #formTitle {
-      width: 100%;
-      margin-bottom: 5px;
-    }
-    #formData {
-      flex: 1;
-      width: 100%;
-      resize: none;
-    }
-    input, textarea {
-      box-sizing: border-box;
+    #fieldsContainer .field {
+      border: 1px solid #ccc;
       padding: 5px;
-      font-size: 14px;
+      margin-bottom: 5px;
+      display: flex;
+      flex-direction: column;
+      cursor: grab;
     }
-
+    #fieldsContainer input, #fieldsContainer select, #fieldsContainer button {
+      margin-top: 3px;
+    }
     #contextMenu {
-    position: absolute;
-    background: #fff;
-    border: 1px solid #aaa;
-    box-shadow: 2px 2px 4px rgba(0,0,0,0.2);
-    display: none;
-    z-index: 1000;
-    font-size: 12px;   /* уменьшили шрифт */
-    min-width: 100px;  /* ширина меню */
+      position: absolute;
+      background: #fff;
+      border: 1px solid #aaa;
+      box-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+      display: none;
+      z-index: 1000;
+      font-size: 12px;
+      min-width: 100px;
     }
-
-    #contextMenu div {
-    padding: 3px 8px;  /* меньше отступы */
-    cursor: pointer;
-    }
-
-    #contextMenu div:hover {
-    background: #eee;
-    }
-
+    #contextMenu div { padding: 3px 8px; cursor: pointer; }
+    #contextMenu div:hover { background: #eee; }
   </style>
 </head>
 <body>
@@ -106,170 +83,187 @@
   </div>
 
   <div id="forms">
-    <input type="text" id="formTitle" placeholder="Form title" maxlength="50">
-    <textarea id="formData" rows="10" placeholder="Form data" maxlength="500"></textarea>
+    <div id="fieldsContainer"></div>
+    <button id="addField">+ Add Field</button>
   </div>
 
-  <!-- Контекстное меню -->
-    <div id="contextMenu">
+  <div id="contextMenu">
     <div id="menuDelete">Удалить</div>
     <div id="menuDuplicate">Дублировать</div>
-    <div id="menuRename">Переименовать</div> <!-- новая кнопка -->
-    </div>
+    <div id="menuRename">Переименовать</div>
+  </div>
 
-  <script>
-    const tabsEl = document.getElementById('tabs')
-    const addBtn = document.getElementById('addForm')
-    const titleInput = document.getElementById('formTitle')
-    const dataInput = document.getElementById('formData')
-    const contextMenu = document.getElementById('contextMenu')
+<script>
+const tabsEl = document.getElementById('tabs');
+const addBtn = document.getElementById('addForm');
+const fieldsContainer = document.getElementById('fieldsContainer');
+const addFieldBtn = document.getElementById('addField');
+const contextMenu = document.getElementById('contextMenu');
 
-    let forms = window.storage.load('forms') || []
-    let activeIndex = 0
-    let contextTabIndex = null
+let forms = window.storage.load('forms') || [];
+let activeIndex = 0;
+let contextTabIndex = null;
 
-    function renderTabs() {
-      tabsEl.innerHTML = ''
-      forms.forEach((f, i) => {
-        const tab = document.createElement('div')
-        tab.className = 'tab' + (i === activeIndex ? ' active' : '')
-        tab.innerText = f.title || 'Untitled'
-        tab.title = f.title
-        tab.onclick = () => switchForm(i)
-        tab.oncontextmenu = (e) => {
-          e.preventDefault()
-          showContextMenu(e.pageX, e.pageY, i)
-        }
-        tabsEl.appendChild(tab)
-      })
+// ------------------ Tabs ------------------
+function renderTabs() {
+  tabsEl.innerHTML = '';
+  forms.forEach((f, i) => {
+    const tab = document.createElement('div');
+    tab.className = 'tab' + (i === activeIndex ? ' active' : '');
+    tab.innerText = f.title || 'Untitled';
+    tab.title = f.title;
+    tab.onclick = () => switchForm(i);
+    tab.oncontextmenu = (e) => {
+      e.preventDefault();
+      showContextMenu(e.pageX, e.pageY, i);
     }
+    tabsEl.appendChild(tab);
+  });
+}
 
-    function saveForms() {
-      window.storage.save('forms', forms)
-    }
+function saveForms() {
+  window.storage.save('forms', forms);
+}
 
-    function saveCurrentForm() {
-      if (forms[activeIndex]) {
-        forms[activeIndex].title = titleInput.value
-        forms[activeIndex].data = dataInput.value
-        saveForms()
-      }
-    }
-
-    function loadForm() {
-      if (forms[activeIndex]) {
-        titleInput.value = forms[activeIndex].title
-        dataInput.value = forms[activeIndex].data
-      } else {
-        titleInput.value = ''
-        dataInput.value = ''
-      }
-    }
-
-    function addForm() {
-      saveCurrentForm()
-      forms.push({ title: 'New Form', data: '' })
-      activeIndex = forms.length - 1
-      loadForm()
-      renderTabs()
-    }
-
-    function deleteForm(index) {
-      forms.splice(index, 1)
-      if (activeIndex >= forms.length) activeIndex = forms.length - 1
-      loadForm()
-      renderTabs()
-      saveForms()
-    }
-
-    function switchForm(index) {
-      saveCurrentForm()
-      activeIndex = index
-      loadForm()
-      renderTabs()
-    }
-
-    function showContextMenu(x, y, index) {
-      contextTabIndex = index
-      contextMenu.style.left = x + 'px'
-      contextMenu.style.top = y + 'px'
-      contextMenu.style.display = 'block'
-    }
-
-    // скрыть меню при клике вне
-    document.addEventListener('click', () => {
-      contextMenu.style.display = 'none'
-    })
-
-    document.getElementById('menuDelete').onclick = () => {
-    if (contextTabIndex !== null) {
-        if (confirm("Вы уверены, что хотите удалить эту форму?")) {
-        deleteForm(contextTabIndex)
-        }
-    }
-    contextMenu.style.display = 'none'
-    }
-
-    document.getElementById('menuDuplicate').onclick = () => {
-      if (contextTabIndex !== null) {
-        const original = forms[contextTabIndex]
-        forms.splice(contextTabIndex + 1, 0, {
-          title: original.title + ' Copy',
-          data: original.data
-        })
-        activeIndex = contextTabIndex + 1
-        saveForms()
-        loadForm()
-        renderTabs()
-      }
-      contextMenu.style.display = 'none'
-    }
-
-  document.getElementById('menuRename').onclick = () => {
-    if (contextTabIndex !== null) {
-      const tabEl = tabsEl.children[contextTabIndex]
-      const oldTitle = forms[contextTabIndex].title
-
-      // Создаем input вместо текста вкладки
-      const input = document.createElement('input')
-      input.type = 'text'
-      input.value = oldTitle
-      input.maxLength = 20
-      input.style.width = '90%'
-      input.style.fontSize = '12px'
-      input.style.boxSizing = 'border-box'
-
-      // Заменяем текст вкладки на input
-      tabEl.innerHTML = ''
-      tabEl.appendChild(input)
-      input.focus()
-      input.select()
-
-      // Сохраняем новое название при потере фокуса или Enter
-      const saveTitle = () => {
-        const newTitle = input.value.trim() || 'Untitled'
-        forms[contextTabIndex].title = newTitle
-        saveForms()
-        renderTabs()
-      }
-
-      input.addEventListener('blur', saveTitle)
-      input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-          saveTitle()
-        }
-      })
-    }
-    contextMenu.style.display = 'none'
+function saveCurrentForm() {
+  if (forms[activeIndex]) {
+    saveForms();
   }
+}
 
-    addBtn.onclick = addForm
-    titleInput.oninput = saveCurrentForm
-    dataInput.oninput = saveCurrentForm
+function switchForm(index) {
+  saveCurrentForm();
+  activeIndex = index;
+  renderTabs();
+  renderFormFields();
+}
 
-    // начальная отрисовка
-    if (forms.length === 0) addForm()
-    else { loadForm(); renderTabs() }
-  </script>
+function addForm() {
+  saveCurrentForm();
+  forms.push({ title: 'New Form', fields: [] });
+  activeIndex = forms.length - 1;
+  renderTabs();
+  renderFormFields();
+  saveForms();
+}
+
+function deleteForm(index) {
+  forms.splice(index,1);
+  if (activeIndex >= forms.length) activeIndex = forms.length -1;
+  renderTabs();
+  renderFormFields();
+  saveForms();
+}
+
+// ------------------ Context Menu ------------------
+function showContextMenu(x, y, index) {
+  contextTabIndex = index;
+  contextMenu.style.left = x + 'px';
+  contextMenu.style.top = y + 'px';
+  contextMenu.style.display = 'block';
+}
+
+document.addEventListener('click', () => { contextMenu.style.display = 'none'; });
+document.getElementById('menuDelete').onclick = () => { if(contextTabIndex!==null){ if(confirm("Вы уверены, что хотите удалить эту форму?")) deleteForm(contextTabIndex);} contextMenu.style.display='none'; }
+document.getElementById('menuDuplicate').onclick = () => { if(contextTabIndex!==null){ const original=forms[contextTabIndex]; const copy=JSON.parse(JSON.stringify(original)); copy.title+=' Copy'; forms.splice(contextTabIndex+1,0,copy); activeIndex=contextTabIndex+1; saveForms(); renderTabs(); renderFormFields();} contextMenu.style.display='none'; }
+document.getElementById('menuRename').onclick = () => {
+  if(contextTabIndex!==null){
+    const tabEl = tabsEl.children[contextTabIndex];
+    const oldTitle=forms[contextTabIndex].title;
+    const input=document.createElement('input');
+    input.type='text'; input.value=oldTitle; input.maxLength=50; input.style.width='90%'; input.style.fontSize='12px'; input.style.boxSizing='border-box';
+    tabEl.innerHTML=''; tabEl.appendChild(input); input.focus(); input.select();
+    const saveTitle=()=>{forms[contextTabIndex].title=input.value.trim()||'Untitled'; saveForms(); renderTabs();}
+    input.addEventListener('blur', saveTitle);
+    input.addEventListener('keydown', (e)=>{if(e.key==='Enter') saveTitle();});
+  }
+  contextMenu.style.display='none';
+}
+
+// ------------------ Survey Builder ------------------
+function renderFormFields() {
+  const form = forms[activeIndex];
+  if(!form.fields) form.fields=[];
+  fieldsContainer.innerHTML='';
+
+  form.fields.forEach((field, idx)=>{
+    const fieldEl=document.createElement('div');
+    fieldEl.className='field';
+    fieldEl.dataset.index=field.index??idx;
+    fieldEl.draggable=true;
+
+    // Drag events
+    fieldEl.addEventListener('dragstart', e => { e.dataTransfer.setData('text/plain', idx); });
+    fieldEl.addEventListener('dragover', e => { e.preventDefault(); fieldEl.style.border='2px dashed #888'; });
+    fieldEl.addEventListener('dragleave', e => { fieldEl.style.border='1px solid #ccc'; });
+    fieldEl.addEventListener('drop', e=>{
+      e.preventDefault(); fieldEl.style.border='1px solid #ccc';
+      const fromIdx=parseInt(e.dataTransfer.getData('text/plain'));
+      if(fromIdx===idx) return;
+      const moved=form.fields.splice(fromIdx,1)[0];
+      form.fields.splice(idx,0,moved);
+      saveForms();
+      renderFormFields();
+    });
+
+    // hidden id
+    const idInput=document.createElement('input'); idInput.type='hidden'; idInput.value=field.id??`field_${Date.now()}_${idx}`; field.id=idInput.value;
+
+    // placeholder
+    const placeholderInput=document.createElement('input');
+    placeholderInput.type='text'; placeholderInput.value=field.placeholder||''; placeholderInput.placeholder='Field Name';
+    placeholderInput.oninput=()=>{field.placeholder=placeholderInput.value; saveForms();}
+
+    // type
+    const typeSelect=document.createElement('select');
+    ['plain text','date','number','list'].forEach(t=>{ const opt=document.createElement('option'); opt.value=t; opt.textContent=t; if(t===field.type) opt.selected=true; typeSelect.appendChild(opt); });
+    typeSelect.onchange=()=>{ field.type=typeSelect.value; if(field.type==='list'&&!field.options) field.options=[]; saveForms(); renderFormFields(); }
+
+    fieldEl.appendChild(idInput);
+    fieldEl.appendChild(placeholderInput);
+    fieldEl.appendChild(typeSelect);
+
+    // list options
+    if(field.type==='list'){
+      const optionsContainer=document.createElement('div'); optionsContainer.style.marginTop='5px'; field.options=field.options||[];
+      field.options.forEach((optValue,optIdx)=>{
+        const optDiv=document.createElement('div'); optDiv.style.display='flex'; optDiv.style.marginBottom='2px';
+        const optInput=document.createElement('input'); optInput.type='text'; optInput.value=optValue; optInput.placeholder='Option'; optInput.style.flex='1';
+        optInput.oninput=()=>{ field.options[optIdx]=optInput.value; saveForms(); }
+        const delOptBtn=document.createElement('button'); delOptBtn.textContent='x';
+        delOptBtn.onclick=()=>{ field.options.splice(optIdx,1); saveForms(); renderFormFields(); }
+        optDiv.appendChild(optInput); optDiv.appendChild(delOptBtn); optionsContainer.appendChild(optDiv);
+      });
+      const addOptBtn=document.createElement('button'); addOptBtn.textContent='+ Add Option'; addOptBtn.onclick=()=>{ field.options.push(''); saveForms(); renderFormFields(); }
+      optionsContainer.appendChild(addOptBtn); fieldEl.appendChild(optionsContainer);
+    }
+
+    // delete field
+    const delBtn=document.createElement('button'); delBtn.textContent='Delete Field'; delBtn.style.marginTop='5px';
+    delBtn.onclick=()=>{ form.fields.splice(idx,1); saveForms(); renderFormFields(); }
+    fieldEl.appendChild(delBtn);
+
+    fieldsContainer.appendChild(fieldEl);
+  });
+}
+
+function addField() {
+  const form=forms[activeIndex];
+  if(!form.fields) form.fields=[];
+  const newIndex=form.fields.length>0?Math.max(...form.fields.map(f=>f.index??0))+1:0;
+  form.fields.push({ index:newIndex, id:`field_${Date.now()}`, placeholder:'', type:'plain text', options:[] });
+  saveForms();
+  renderFormFields();
+}
+
+// ------------------ Event Listeners ------------------
+addBtn.onclick=addForm;
+addFieldBtn.onclick=addField;
+
+// ------------------ Initial ------------------
+if(forms.length===0) addForm();
+else{ renderTabs(); renderFormFields(); }
+
+</script>
 </body>
 </html>
