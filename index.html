@@ -111,10 +111,11 @@
   </div>
 
   <!-- Контекстное меню -->
-  <div id="contextMenu">
+    <div id="contextMenu">
     <div id="menuDelete">Удалить</div>
     <div id="menuDuplicate">Дублировать</div>
-  </div>
+    <div id="menuRename">Переименовать</div> <!-- новая кнопка -->
+    </div>
 
   <script>
     const tabsEl = document.getElementById('tabs')
@@ -223,6 +224,44 @@
       }
       contextMenu.style.display = 'none'
     }
+
+  document.getElementById('menuRename').onclick = () => {
+    if (contextTabIndex !== null) {
+      const tabEl = tabsEl.children[contextTabIndex]
+      const oldTitle = forms[contextTabIndex].title
+
+      // Создаем input вместо текста вкладки
+      const input = document.createElement('input')
+      input.type = 'text'
+      input.value = oldTitle
+      input.maxLength = 20
+      input.style.width = '90%'
+      input.style.fontSize = '12px'
+      input.style.boxSizing = 'border-box'
+
+      // Заменяем текст вкладки на input
+      tabEl.innerHTML = ''
+      tabEl.appendChild(input)
+      input.focus()
+      input.select()
+
+      // Сохраняем новое название при потере фокуса или Enter
+      const saveTitle = () => {
+        const newTitle = input.value.trim() || 'Untitled'
+        forms[contextTabIndex].title = newTitle
+        saveForms()
+        renderTabs()
+      }
+
+      input.addEventListener('blur', saveTitle)
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          saveTitle()
+        }
+      })
+    }
+    contextMenu.style.display = 'none'
+  }
 
     addBtn.onclick = addForm
     titleInput.oninput = saveCurrentForm
