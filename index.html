@@ -256,8 +256,15 @@ groupEl.appendChild(groupContent);
           fieldEl.appendChild(selectEl);
         }
       } else {
-        const valInput = document.createElement('input');
-        valInput.type = field.type==='date'?'date':'text';
+        var valInput = NaN
+        if(field.type==='date') {
+            valInput = document.createElement('input');
+            valInput.type = 'date'
+        }
+        else {
+            valInput = document.createElement('textarea');
+            valInput.type = 'text'
+        }
         valInput.value = field.default||'';
         valInput.placeholder = 'Default Value';
         valInput.oninput = ()=>{ field.default = valInput.value; saveForms(); };
