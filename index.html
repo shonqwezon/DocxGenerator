@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>Multi-Form Survey Builder with Groups</title>
+  <title>DocxGenerator</title>
   <style>
     body {
       display: flex;
@@ -178,13 +178,13 @@
 
 <body>
   <div id="sidebar">
-    <button id="addForm">+ Add Form</button>
+    <button id="addForm">+ Добавить форму</button>
     <div id="tabs"></div>
   </div>
   <div id="forms">
     <div id="fieldsContainer"></div>
-    <button id="addGroup">+ Add Group</button>
-    <button id="toggleEdit">Switch to View</button>
+    <button id="addGroup">+ Добавить группу</button>
+    <button id="toggleEdit">Переключить в режим настройки</button>
   </div>
   <div id="contextMenu">
     <div id="menuDelete">Удалить</div>
@@ -196,8 +196,8 @@
     <div style="background:#fff; padding:20px; border-radius:8px; min-width:300px;">
       <div id="modalText"></div>
       <div style="margin-top:10px; text-align:right;">
-        <button id="modalCancel">Cancel</button>
-        <button id="modalOk">OK</button>
+        <button id="modalCancel">Отменить</button>
+        <button id="modalOk">Принять</button>
       </div>
     </div>
   </div>
@@ -236,18 +236,18 @@
     // Create Generate button
     const generateBtn = document.createElement('button');
     generateBtn.id = 'generateBtn';
-    generateBtn.textContent = 'Generate';
+    generateBtn.textContent = 'Сгенерировать';
 
     // Insert Generate before toggle
     toggleBtn.parentNode.insertBefore(generateBtn, toggleBtn);
 
     const clearBtn = document.createElement('button');
     clearBtn.id = 'clearBtn';
-    clearBtn.textContent = 'Clear Form';
+    clearBtn.textContent = 'Очистить форму';
     generateBtn.parentNode.insertBefore(clearBtn, generateBtn.nextSibling);
 
     clearBtn.onclick = async () => {
-      const proceed = await showConfirm('Are you sure you want to reset this form?');
+      const proceed = await showConfirm('Вы уверены, что хотите очистить эту форму?');
       if (!proceed) return;
       const form = forms[activeIndex];
       form.groups.forEach(group => {
@@ -295,7 +295,7 @@
     function saveForms() { if (window.storage) window.storage.save('forms', forms); }
     function saveCurrentForm() { if (forms[activeIndex]) saveForms(); }
     function switchForm(index) { saveCurrentForm(); activeIndex = index; renderTabs(); renderFormFields(); }
-    function addForm() { saveCurrentForm(); forms.push({ title: 'New Form', groups: [] }); activeIndex = forms.length - 1; renderTabs(); renderFormFields(); saveForms(); }
+    function addForm() { saveCurrentForm(); forms.push({ title: 'Новая форма', groups: [] }); activeIndex = forms.length - 1; renderTabs(); renderFormFields(); saveForms(); }
     function deleteForm(index) { forms.splice(index, 1); if (activeIndex >= forms.length) activeIndex = forms.length - 1; renderTabs(); renderFormFields(); saveForms(); }
 
     // Context Menu
@@ -344,7 +344,7 @@
     // Toggle Edit/View
     toggleBtn.onclick = () => {
       editMode = !editMode;
-      toggleBtn.textContent = editMode ? 'Switch to View' : 'Switch to Edit';
+      toggleBtn.textContent = editMode ? 'Перключить в режим работы' : 'Переключить в режим настройки';
       generateBtn.style.display = editMode ? 'none' : 'block';
       renderFormFields();
     };
@@ -381,32 +381,11 @@
         };
         fileLabel.appendChild(fileInput);
         topControls.appendChild(fileLabel);
-
-        // Directory input
-        const dirLabel = document.createElement('label');
-        dirLabel.textContent = 'Output Directory: ';
-        const dirInput = document.createElement('input');
-        dirInput.type = 'file';
-        dirInput.webkitdirectory = true;
-        dirInput.directory = true;
-        dirInput.onchange = () => {
-          if (dirInput.files.length > 0) {
-            form.outputDir = dirInput.files[0].webkitRelativePath.split('/')[0];
-            saveForms();
-          }
-        };
-        dirLabel.appendChild(dirInput);
-        topControls.appendChild(dirLabel);
-
       } else {
         // --- View Mode ---
         const filesEl = document.createElement('div');
         filesEl.textContent = 'Files: ' + (form.files?.length ? form.files.join(', ') : 'None');
         topControls.appendChild(filesEl);
-
-        const dirEl = document.createElement('div');
-        dirEl.textContent = 'Output Directory: ' + (form.outputDir || 'Not selected');
-        topControls.appendChild(dirEl);
       }
 
       // === Groups rendering continues here ===
@@ -421,7 +400,7 @@
         if (editMode) {
           titleEl.type = 'text';
           titleEl.value = group.label || '';
-          titleEl.placeholder = 'Group Title';
+          titleEl.placeholder = 'Заголовок группы';
           titleEl.style.width = '100%';
           titleEl.style.marginBottom = '5px';
           titleEl.style.boxSizing = 'border-box';
@@ -459,7 +438,7 @@
 
           // Delete group
           const delGroupBtn = document.createElement('button');
-          delGroupBtn.textContent = 'Delete Group';
+          delGroupBtn.textContent = 'Удалить группу';
           delGroupBtn.className = 'deleteGroupBtn';
           delGroupBtn.onclick = () => { form.groups.splice(gIdx, 1); saveForms(); renderFormFields(); };
           groupEl.appendChild(delGroupBtn);
@@ -493,7 +472,7 @@
             idInput.type = 'text';
             idInput.value = field.id || `field_${Date.now()}`;
             field.id = idInput.value;
-            idInput.placeholder = 'Field ID';
+            idInput.placeholder = 'ID поля';
             idInput.oninput = () => { field.id = idInput.value || `field_${Date.now()}`; saveForms(); };
             fieldEl.appendChild(idInput);
           }
@@ -502,12 +481,12 @@
             const nameInput = document.createElement('input');
             nameInput.type = 'text';
             nameInput.value = field.placeholder || '';
-            nameInput.placeholder = 'Field Name';
+            nameInput.placeholder = 'Подсказка';
             nameInput.oninput = e => { field.placeholder = e.target.value; saveForms(); };
             fieldEl.appendChild(nameInput);
           } else {
             const label = document.createElement('label');
-            label.textContent = field.placeholder || 'Untitled';
+            label.textContent = field.placeholder || 'Без названия';
             fieldEl.appendChild(label);
           }
 
@@ -532,12 +511,12 @@
                 const optDiv = document.createElement('div');
                 optDiv.style.display = 'flex'; optDiv.style.marginBottom = '2px';
                 const optInput = document.createElement('input');
-                optInput.type = 'text'; optInput.value = opt; optInput.placeholder = 'Option'; optInput.style.flex = '1';
+                optInput.type = 'text'; optInput.value = opt; optInput.placeholder = 'Вариант'; optInput.style.flex = '1';
                 optInput.oninput = () => { field.options[optIdx] = optInput.value; saveForms(); };
                 const delOptBtn = document.createElement('button'); delOptBtn.textContent = 'x'; delOptBtn.onclick = () => { field.options.splice(optIdx, 1); saveForms(); renderFormFields(); };
                 optDiv.appendChild(optInput); optDiv.appendChild(delOptBtn); optionsContainer.appendChild(optDiv);
               });
-              const addOptionBtn = document.createElement('button'); addOptionBtn.textContent = '+ Add Option';
+              const addOptionBtn = document.createElement('button'); addOptionBtn.textContent = '+ Добавить вариант';
               addOptionBtn.onclick = () => { field.options.push(''); saveForms(); renderFormFields(); };
               optionsContainer.appendChild(addOptionBtn);
               fieldEl.appendChild(optionsContainer);
@@ -559,7 +538,7 @@
             }
             valInput.value = field.default || '';
             field.val = valInput.value;
-            valInput.placeholder = 'Default Value';
+            valInput.placeholder = 'Значение по умолчанию';
             valInput.oninput = () => {
               if(editMode){
               field.default = valInput.value; }
@@ -569,7 +548,7 @@
           }
 
           if (editMode) {
-            const delBtn = document.createElement('button'); delBtn.textContent = 'Delete Field';
+            const delBtn = document.createElement('button'); delBtn.textContent = 'Удалить поле';
             delBtn.onclick = () => { group.fields.splice(idx, 1); saveForms(); renderFormFields(); };
             fieldEl.appendChild(delBtn);
 
@@ -595,9 +574,9 @@
 
         // Добавление нового поля в группу
         if (editMode) {
-          const addFieldBtn = document.createElement('button'); addFieldBtn.textContent = '+ Add Field';
+          const addFieldBtn = document.createElement('button'); addFieldBtn.textContent = '+ Добавить поле';
           addFieldBtn.onclick = () => {
-            const newField = { id: `field_${Date.now()}`, placeholder: '', type: 'plain text', options: [], default: '' };
+            const newField = { id: `field_${Date.now()}`, placeholder: '', type: 'Текст', options: [], default: '' };
             group.fields.push(newField);
             saveForms();
             renderFormFields();
@@ -621,7 +600,7 @@
     generateBtn.onclick = async () => {
       const form = forms[activeIndex]
       if (!form.files || !form.files.length) {
-        await showConfirm('Please select files first.')
+        await showConfirm('Сперва выберите файлы из папки input/ рядом с .exe')
         return
       }
 
@@ -639,7 +618,7 @@
 
       const success = await window.docxProcessor.patchFiles(fileLinks, fieldValues)
       if (success) await showConfirm("Файлы успешно сгенерированы!");
-      else await showConfirm("Не удалось сгенерировать файлы.");
+      else await showConfirm("Не удалось сгенерировать файлы");
     };
 
 
