@@ -373,6 +373,12 @@
 
     generateBtn.style.display = 'block'; // hidden by default
 
+    function formatDateToDDMMYYYY(dateStr) {
+      if (!dateStr) return '';
+      const [year, month, day] = dateStr.split('-');
+      return `${day}.${month}.${year}`;
+    }
+
     function renderFormFields() {
       const form = forms[activeIndex];
       if (!form.groups) form.groups = [];
@@ -580,7 +586,12 @@
               if (editMode) {
                 field.default = valInput.value;
               }
-              field.val = valInput.value; saveForms();
+              if (field.type === 'date') {
+                field.val = formatDateToDDMMYYYY(valInput.value);
+              } else {
+                field.val = valInput.value;
+              }
+              saveForms();
             };
             fieldEl.appendChild(valInput);
           }
@@ -653,7 +664,7 @@
           if (field.id) fieldValues[field.id] = value;
         });
       });
-
+      console.log(fieldValues)
       const success = await window.docxProcessor.patchFiles(fileLinks, fieldValues)
       if (success) await showConfirm("Файлы успешно сгенерированы!");
       else await showConfirm("Не удалось сгенерировать файлы. Смотри ошибку во вкладке \"Console\" Ctrl+Shift+I");
