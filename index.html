@@ -225,11 +225,18 @@
   </div>
 
   <script>
-    function showConfirm(message) {
+    function showConfirm(message, warningType = true) {
       return new Promise(resolve => {
         const modal = document.getElementById('modal');
-        document.getElementById('modalText').innerText = message;
+        const modalText = document.getElementById('modalText');
+        const okBtn = document.getElementById('modalOk');
+        const cancelBtn = document.getElementById('modalCancel');
+
+        modalText.innerText = message;
         modal.style.display = 'flex';
+
+        // Скрываем или показываем кнопку Cancel
+        cancelBtn.style.display = warningType ? 'none' : 'inline-block';
 
         const cleanup = () => {
           modal.style.display = 'none';
@@ -237,14 +244,11 @@
           cancelBtn.removeEventListener('click', onCancel);
         };
 
-        const okBtn = document.getElementById('modalOk');
-        const cancelBtn = document.getElementById('modalCancel');
-
         const onOk = () => { cleanup(); resolve(true); };
         const onCancel = () => { cleanup(); resolve(false); };
 
         okBtn.addEventListener('click', onOk);
-        cancelBtn.addEventListener('click', onCancel);
+        if (!warningType) cancelBtn.addEventListener('click', onCancel);
       });
     }
 
@@ -269,7 +273,7 @@
     generateBtn.parentNode.insertBefore(clearBtn, generateBtn.nextSibling);
 
     clearBtn.onclick = async () => {
-      const proceed = await showConfirm('Вы уверены, что хотите очистить эту форму?');
+      const proceed = await showConfirm('Вы уверены, что хотите очистить эту форму?', false);
       if (!proceed) return;
       const form = forms[activeIndex];
       form.groups.forEach(group => {
@@ -325,7 +329,7 @@
     document.addEventListener('click', () => { contextMenu.style.display = 'none'; });
     document.getElementById('menuDelete').onclick = async () => {
       if (contextTabIndex !== null) {
-        const proceed = await showConfirm('Вы уверены, что хотите удалить эту форму?');
+        const proceed = await showConfirm('Вы уверены, что хотите удалить эту форму?', false);
         if (!proceed) return;
         deleteForm(contextTabIndex);
       } contextMenu.style.display = 'none';
