@@ -191,8 +191,43 @@
     <div id="menuDuplicate">Дублировать</div>
     <div id="menuRename">Переименовать</div>
   </div>
+  <div id="modal"
+    style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); justify-content:center; align-items:center;">
+    <div style="background:#fff; padding:20px; border-radius:8px; min-width:300px;">
+      <div id="modalText"></div>
+      <div style="margin-top:10px; text-align:right;">
+        <button id="modalCancel">Cancel</button>
+        <button id="modalOk">OK</button>
+      </div>
+    </div>
+  </div>
 
   <script>
+    function showConfirm(message) {
+      return new Promise(resolve => {
+        const modal = document.getElementById('modal');
+        document.getElementById('modalText').innerText = message;
+        modal.style.display = 'flex';
+
+        const cleanup = () => {
+          modal.style.display = 'none';
+          okBtn.removeEventListener('click', onOk);
+          cancelBtn.removeEventListener('click', onCancel);
+        };
+
+        const okBtn = document.getElementById('modalOk');
+        const cancelBtn = document.getElementById('modalCancel');
+
+        const onOk = () => { cleanup(); resolve(true); };
+        const onCancel = () => { cleanup(); resolve(false); };
+
+        okBtn.addEventListener('click', onOk);
+        cancelBtn.addEventListener('click', onCancel);
+      });
+    }
+
+
+
     const tabsEl = document.getElementById('tabs');
     const addBtn = document.getElementById('addForm');
     const fieldsContainer = document.getElementById('fieldsContainer');
@@ -211,22 +246,23 @@
     clearBtn.textContent = 'Clear Form';
     generateBtn.parentNode.insertBefore(clearBtn, generateBtn.nextSibling);
 
-    clearBtn.onclick = () => {
-      if (confirm('Are you sure you want to reset this form to default values?')) {
-        const form = forms[activeIndex];
-        form.groups.forEach(group => {
-          group.fields.forEach(field => {
-            if (field.type === 'list') {
-              // Сбрасываем выбранное значение списка
-              field.value = field.options && field.options.length ? field.options[0] : '';
-            } else {
-              field.value = field.default || '';
-            }
-          });
+    clearBtn.onclick = async () => {
+      const proceed = await showConfirm('Are you sure you want to reset this form?');
+      if (!proceed) return;
+      const form = forms[activeIndex];
+      form.groups.forEach(group => {
+        group.fields.forEach(field => {
+          if (field.type === 'list') {
+            // Сбрасываем выбранное значение списка
+            field.value = field.options && field.options.length ? field.options[0] : '';
+          } else {
+            field.value = field.default || '';
+            field.val = field.value;
+          }
         });
-        saveForms();
-        renderFormFields();
-      }
+      });
+      saveForms();
+      renderFormFields();
     };
 
 
@@ -265,7 +301,13 @@
     // Context Menu
     function showContextMenu(x, y, index) { contextTabIndex = index; contextMenu.style.left = x + 'px'; contextMenu.style.top = y + 'px'; contextMenu.style.display = 'block'; }
     document.addEventListener('click', () => { contextMenu.style.display = 'none'; });
-    document.getElementById('menuDelete').onclick = () => { if (contextTabIndex !== null) { if (confirm("Вы уверены, что хотите удалить эту форму?")) deleteForm(contextTabIndex); } contextMenu.style.display = 'none'; }
+    document.getElementById('menuDelete').onclick = async () => {
+      if (contextTabIndex !== null) {
+        const proceed = await showConfirm('Вы уверены, что хотите удалить эту форму?');
+        if (!proceed) return;
+        deleteForm(contextTabIndex);
+      } contextMenu.style.display = 'none';
+    }
     document.getElementById('menuDuplicate').onclick = () => { if (contextTabIndex !== null) { const original = forms[contextTabIndex]; const copy = JSON.parse(JSON.stringify(original)); copy.title += ' Copy'; forms.splice(contextTabIndex + 1, 0, copy); activeIndex = contextTabIndex + 1; saveForms(); renderTabs(); renderFormFields(); } contextMenu.style.display = 'none'; }
     document.getElementById('menuRename').onclick = () => {
       if (contextTabIndex !== null) {
@@ -513,10 +555,16 @@
             else {
               valInput = document.createElement('textarea');
               valInput.type = 'text'
+
             }
             valInput.value = field.default || '';
+            field.val = valInput.value;
             valInput.placeholder = 'Default Value';
-            valInput.oninput = () => { field.default = valInput.value; saveForms(); };
+            valInput.oninput = () => {
+              if(editMode){
+              field.default = valInput.value; }
+                  field.val = valInput.value; saveForms();
+            };
             fieldEl.appendChild(valInput);
           }
 
@@ -586,7 +634,7 @@
           if (field.type === 'list') {
             value = field.value || ''; // выбранное значение списка
           } else {
-            value = field.default || '';
+            value = field.val || '';
           }
           output += `- ID: ${field.id || 'no-id'}, Name: ${field.placeholder || ''}, Value: ${value}\n`;
         });
