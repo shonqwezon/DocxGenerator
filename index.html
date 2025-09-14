@@ -140,6 +140,23 @@
     .addFieldBtn {
       margin-top: 5px;
     }
+
+    #generateBtn {
+      width: 100%;
+      padding: 5px 0;
+      border-radius: 8px;
+      border: 1px solid #888;
+      background-color: #eee;
+      cursor: pointer;
+      margin-bottom: 5px;
+      text-align: center;
+      transition: 0.2s;
+    }
+
+    #generateBtn:hover {
+      background: #ddd;
+      border-color: #555;
+    }
   </style>
 </head>
 
@@ -165,12 +182,24 @@
     const fieldsContainer = document.getElementById('fieldsContainer');
     const addGroupBtn = document.getElementById('addGroup');
     const toggleBtn = document.getElementById('toggleEdit');
+    // Create Generate button
+    const generateBtn = document.createElement('button');
+    generateBtn.id = 'generateBtn';
+    generateBtn.textContent = 'Generate';
+
+    // Insert Generate before toggle
+    toggleBtn.parentNode.insertBefore(generateBtn, toggleBtn);
+
+    // Move toggle button to the right under Generate
+    toggleBtn.style.width = '100%';
+    toggleBtn.style.marginTop = '0';
+
     const contextMenu = document.getElementById('contextMenu');
 
     let forms = window.storage?.load('forms') || [];
     let activeIndex = 0;
     let contextTabIndex = null;
-    let editMode = true;
+    let editMode = false;
 
     // Tabs
     function renderTabs() {
@@ -230,7 +259,14 @@
     };
 
     // Toggle Edit/View
-    toggleBtn.onclick = () => { editMode = !editMode; toggleBtn.textContent = editMode ? 'Switch to View' : 'Switch to Edit'; renderFormFields(); }
+    toggleBtn.onclick = () => {
+      editMode = !editMode;
+      toggleBtn.textContent = editMode ? 'Switch to View' : 'Switch to Edit';
+      generateBtn.style.display = editMode ? 'none' : 'block';
+      renderFormFields();
+    };
+
+    generateBtn.style.display = 'block'; // hidden by default
 
     function renderFormFields() {
       const form = forms[activeIndex];
@@ -238,57 +274,57 @@
       fieldsContainer.innerHTML = '';
       addGroupBtn.style.display = editMode ? 'block' : 'none';
 
-// === File & Directory section (per form) ===
-  const topControls = document.createElement('div');
-  topControls.style.marginBottom = '10px';
-  topControls.style.display = 'flex';
-  topControls.style.flexDirection = 'column';
-  topControls.style.gap = '5px';
-  fieldsContainer.appendChild(topControls);
+      // === File & Directory section (per form) ===
+      const topControls = document.createElement('div');
+      topControls.style.marginBottom = '10px';
+      topControls.style.display = 'flex';
+      topControls.style.flexDirection = 'column';
+      topControls.style.gap = '5px';
+      fieldsContainer.appendChild(topControls);
 
-  if (editMode) {
-    // --- Edit Mode ---
-    // File input
-    const fileLabel = document.createElement('label');
-    fileLabel.textContent = 'Select Files: ';
-    const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.multiple = true;
-    fileInput.onchange = () => {
-      form.files = Array.from(fileInput.files).map(f => f.name);
-      saveForms();
-    };
-    fileLabel.appendChild(fileInput);
-    topControls.appendChild(fileLabel);
+      if (editMode) {
+        // --- Edit Mode ---
+        // File input
+        const fileLabel = document.createElement('label');
+        fileLabel.textContent = 'Select Files: ';
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.multiple = true;
+        fileInput.onchange = () => {
+          form.files = Array.from(fileInput.files).map(f => f.name);
+          saveForms();
+        };
+        fileLabel.appendChild(fileInput);
+        topControls.appendChild(fileLabel);
 
-    // Directory input
-    const dirLabel = document.createElement('label');
-    dirLabel.textContent = 'Output Directory: ';
-    const dirInput = document.createElement('input');
-    dirInput.type = 'file';
-    dirInput.webkitdirectory = true;
-    dirInput.directory = true;
-    dirInput.onchange = () => {
-      if (dirInput.files.length > 0) {
-        form.outputDir = dirInput.files[0].webkitRelativePath.split('/')[0];
-        saveForms();
+        // Directory input
+        const dirLabel = document.createElement('label');
+        dirLabel.textContent = 'Output Directory: ';
+        const dirInput = document.createElement('input');
+        dirInput.type = 'file';
+        dirInput.webkitdirectory = true;
+        dirInput.directory = true;
+        dirInput.onchange = () => {
+          if (dirInput.files.length > 0) {
+            form.outputDir = dirInput.files[0].webkitRelativePath.split('/')[0];
+            saveForms();
+          }
+        };
+        dirLabel.appendChild(dirInput);
+        topControls.appendChild(dirLabel);
+
+      } else {
+        // --- View Mode ---
+        const filesEl = document.createElement('div');
+        filesEl.textContent = 'Files: ' + (form.files?.length ? form.files.join(', ') : 'None');
+        topControls.appendChild(filesEl);
+
+        const dirEl = document.createElement('div');
+        dirEl.textContent = 'Output Directory: ' + (form.outputDir || 'Not selected');
+        topControls.appendChild(dirEl);
       }
-    };
-    dirLabel.appendChild(dirInput);
-    topControls.appendChild(dirLabel);
 
-  } else {
-    // --- View Mode ---
-    const filesEl = document.createElement('div');
-    filesEl.textContent = 'Files: ' + (form.files?.length ? form.files.join(', ') : 'None');
-    topControls.appendChild(filesEl);
-
-    const dirEl = document.createElement('div');
-    dirEl.textContent = 'Output Directory: ' + (form.outputDir || 'Not selected');
-    topControls.appendChild(dirEl);
-  }
-
-  // === Groups rendering continues here ===
+      // === Groups rendering continues here ===
 
       form.groups.forEach((group, gIdx) => {
         const groupEl = document.createElement('div');
@@ -373,7 +409,7 @@
             idInput.value = field.id || `field_${Date.now()}`;
             field.id = idInput.value;
             idInput.placeholder = 'Field ID';
-            idInput.oninput = () => { field.id = idInput.value; saveForms(); };
+            idInput.oninput = () => { field.id = idInput.value || `field_${Date.now()}`; saveForms(); };
             fieldEl.appendChild(idInput);
           }
 
@@ -469,7 +505,13 @@
         // Добавление нового поля в группу
         if (editMode) {
           const addFieldBtn = document.createElement('button'); addFieldBtn.textContent = '+ Add Field';
-          addFieldBtn.onclick = () => { group.fields.push({ id: `field_${Date.now()}`, placeholder: '', type: 'plain text', options: [], default: '' }); saveForms(); renderFormFields(); };
+          addFieldBtn.onclick = () => {
+            const newField = { id: `field_${Date.now()}`, placeholder: '', type: 'plain text', options: [], default: '' };
+            group.fields.push(newField);
+            saveForms();
+            renderFormFields();
+          };
+
           groupContent.appendChild(addFieldBtn);
         }
 
@@ -484,6 +526,34 @@
 
     // Init
     if (forms.length === 0) addForm(); else { renderTabs(); renderFormFields(); }
+
+    generateBtn.onclick = () => {
+      const form = forms[activeIndex];
+      let output = `Form: ${form.title}\n\n`;
+
+      // Files & Directory
+      output += `Files: ${form.files?.length ? form.files.join(', ') : 'None'}\n`;
+      output += `Output Directory: ${form.outputDir || 'Not selected'}\n\n`;
+
+      // Groups and fields
+      form.groups.forEach((group, gIdx) => {
+        output += `Group ${gIdx + 1}: ${group.label || ''}\n`;
+        group.fields.forEach((field, idx) => {
+          let value = '';
+          if (field.type === 'list') {
+            value = field.value || ''; // выбранное значение списка
+          } else {
+            value = field.default || '';
+          }
+          output += `- ID: ${field.id || 'no-id'}, Name: ${field.placeholder || ''}, Value: ${value}\n`;
+        });
+        output += '\n';
+      });
+
+      alert(output);
+    };
+
+
   </script>
 </body>
 
