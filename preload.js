@@ -3,6 +3,7 @@ const path = require("node:path");
 const Docxtemplater = require("docxtemplater");
 const PizZip = require("pizzip");
 const fs = require("fs");
+const os = require('os');
 // expose simple storage API to renderer
 contextBridge.exposeInMainWorld('storage', {
   save: (key, value) => localStorage.setItem(key, JSON.stringify(value)),
@@ -16,10 +17,10 @@ contextBridge.exposeInMainWorld('docxProcessor', {
   patchFiles: async (files, fields) => {
     try {
       for (const fileName of files) {
-        outputDir = path.join(__dirname, 'output')
+        outputDir = path.join(os.homedir(), 'output')
         if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir);
         const content = fs.readFileSync(
-          path.resolve(path.join(__dirname, 'input'), fileName),
+          path.resolve(path.join(os.homedir(), 'input'), fileName),
           "binary"
         );
         const zip = new PizZip(content);
