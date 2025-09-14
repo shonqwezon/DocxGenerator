@@ -653,6 +653,19 @@
         return
       }
 
+      let allFilled = true;
+      form.groups.forEach(group => {
+        group.fields.forEach(field => {
+          const value = field.type === 'list' ? (field.value || '') : (field.val || '');
+          if (!value || value.trim() === '') allFilled = false;
+        });
+      });
+
+      if (!allFilled) {
+        await showConfirm('Заполните все поля перед генерацией!');
+        return;
+      }
+
       // 1. Ссылки на input files
       const fileLinks = form.files || []; // массив файлов или пустой
 
@@ -664,7 +677,7 @@
           if (field.id) fieldValues[field.id] = value;
         });
       });
-      console.log(fieldValues)
+      console.log(JSON.stringify(fieldValues))
       const success = await window.docxProcessor.patchFiles(fileLinks, fieldValues)
       if (success) await showConfirm("Файлы успешно сгенерированы!");
       else await showConfirm("Не удалось сгенерировать файлы. Смотри ошибку во вкладке \"Console\" Ctrl+Shift+I");
