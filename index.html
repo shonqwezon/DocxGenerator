@@ -157,6 +157,22 @@
       background: #ddd;
       border-color: #555;
     }
+
+    #clearBtn {
+      width: 100%;
+      padding: 5px 0;
+      border-radius: 8px;
+      border: 1px solid #888;
+      background-color: #eee;
+      cursor: pointer;
+      margin-bottom: 5px;
+      text-align: center;
+      transition: 0.2s;
+    }
+
+    #clearBtn:hover {
+      background-color: #ddd;
+    }
   </style>
 </head>
 
@@ -189,6 +205,31 @@
 
     // Insert Generate before toggle
     toggleBtn.parentNode.insertBefore(generateBtn, toggleBtn);
+
+    const clearBtn = document.createElement('button');
+    clearBtn.id = 'clearBtn';
+    clearBtn.textContent = 'Clear Form';
+    generateBtn.parentNode.insertBefore(clearBtn, generateBtn.nextSibling);
+
+    clearBtn.onclick = () => {
+      if (confirm('Are you sure you want to reset this form to default values?')) {
+        const form = forms[activeIndex];
+        form.groups.forEach(group => {
+          group.fields.forEach(field => {
+            if (field.type === 'list') {
+              // Сбрасываем выбранное значение списка
+              field.value = field.options && field.options.length ? field.options[0] : '';
+            } else {
+              field.value = field.default || '';
+            }
+          });
+        });
+        saveForms();
+        renderFormFields();
+      }
+    };
+
+
 
     // Move toggle button to the right under Generate
     toggleBtn.style.width = '100%';
@@ -273,6 +314,8 @@
       if (!form.groups) form.groups = [];
       fieldsContainer.innerHTML = '';
       addGroupBtn.style.display = editMode ? 'block' : 'none';
+      clearBtn.style.display = editMode ? 'none' : 'block';
+
 
       // === File & Directory section (per form) ===
       const topControls = document.createElement('div');
