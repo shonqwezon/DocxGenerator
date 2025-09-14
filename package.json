@@ -2,16 +2,28 @@
   "name": "docx-generator",
   "version": "1.0.0",
   "main": "main.js",
+  "build": {
+    "appId": "semyonq.docx-generator",
+    "mac": {
+      "category": "public.app-category.utilities",
+      "target": ["dmg", "zip"]
+    },
+    "win": {
+      "target": ["nsis", "zip"]
+    }
+  },
   "scripts": {
     "start": "electron .",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "electron-builder"
   },
   "dependencies": {
     "docxtemplater": "^3.66.3",
     "pizzip": "^3.2.0"
   },
   "devDependencies": {
-    "electron": "^38.1.0"
+    "electron": "^38.1.0",
+    "electron-builder": "^26.0.12"
   },
   "repository": {
     "type": "git",
