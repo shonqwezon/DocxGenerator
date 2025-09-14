@@ -618,30 +618,28 @@
     // Init
     if (forms.length === 0) addForm(); else { renderTabs(); renderFormFields(); }
 
-    generateBtn.onclick = () => {
-      const form = forms[activeIndex];
-      let output = `Form: ${form.title}\n\n`;
+    generateBtn.onclick = async () => {
+      const form = forms[activeIndex]
+      if (!form.files || !form.files.length) {
+        await showConfirm('Please select files first.')
+        return
+      }
 
-      // Files & Directory
-      output += `Files: ${form.files?.length ? form.files.join(', ') : 'None'}\n`;
-      output += `Output Directory: ${form.outputDir || 'Not selected'}\n\n`;
+      // 1. Ссылки на input files
+      const fileLinks = form.files || []; // массив файлов или пустой
 
-      // Groups and fields
-      form.groups.forEach((group, gIdx) => {
-        output += `Group ${gIdx + 1}: ${group.label || ''}\n`;
-        group.fields.forEach((field, idx) => {
-          let value = '';
-          if (field.type === 'list') {
-            value = field.value || ''; // выбранное значение списка
-          } else {
-            value = field.val || '';
-          }
-          output += `- ID: ${field.id || 'no-id'}, Name: ${field.placeholder || ''}, Value: ${value}\n`;
+      // 3. Структура {'field id': 'field val'}
+      const fieldValues = {};
+      form.groups.forEach(group => {
+        group.fields.forEach(field => {
+          const value = field.type === 'list' ? (field.value || '') : (field.val || '');
+          if (field.id) fieldValues[field.id] = value;
         });
-        output += '\n';
       });
 
-      alert(output);
+      const success = await window.docxProcessor.patchFiles(fileLinks, fieldValues)
+      if (success) await showConfirm("Файлы успешно сгенерированы!");
+      else await showConfirm("Не удалось сгенерировать файлы.");
     };
 
 
