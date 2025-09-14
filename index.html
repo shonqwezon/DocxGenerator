@@ -13,7 +13,6 @@
       background-color: #f7f8fa;
       color: #333;
       font-size: 12px;
-      /* компактный базовый размер */
     }
 
     #sidebar {
@@ -36,7 +35,6 @@
 
     .tab {
       padding: 4px 6px;
-      /* меньшие отступы */
       cursor: pointer;
       margin-bottom: 3px;
       background: #dde1e6;
@@ -193,6 +191,32 @@
     #clearBtn:hover {
       background-color: #ffcdd2;
       border-color: #ef9a9a;
+    }
+
+    /* ==== Красные кнопки для удаления ==== */
+    button.deleteGroupBtn,
+    button.deleteFieldBtn,
+    button.deleteOptionBtn {
+      background-color: #ffebee;
+      color: #c62828;
+      border-color: #c62828;
+    }
+
+    button.deleteGroupBtn:hover,
+    button.deleteFieldBtn:hover,
+    button.deleteOptionBtn:hover {
+      background-color: #ffcdd2;
+      border-color: #c62828;
+    }
+
+    /* Кнопка удаления из контекстного меню */
+    #contextMenu div#menuDelete {
+      background-color: #ffebee;
+      color: #c62828;
+    }
+
+    #contextMenu div#menuDelete:hover {
+      background-color: #ffcdd2;
     }
   </style>
 
@@ -546,6 +570,7 @@
                 optInput.type = 'text'; optInput.value = opt; optInput.placeholder = 'Вариант'; optInput.style.flex = '1';
                 optInput.oninput = () => { field.options[optIdx] = optInput.value; saveForms(); };
                 const delOptBtn = document.createElement('button'); delOptBtn.textContent = 'x'; delOptBtn.onclick = () => { field.options.splice(optIdx, 1); saveForms(); renderFormFields(); };
+                delOptBtn.className = 'deleteOptionBtn';
                 optDiv.appendChild(optInput); optDiv.appendChild(delOptBtn); optionsContainer.appendChild(optDiv);
               });
               const addOptionBtn = document.createElement('button'); addOptionBtn.textContent = '+ Добавить вариант';
@@ -602,6 +627,8 @@
 
           if (editMode) {
             const delBtn = document.createElement('button'); delBtn.textContent = 'Удалить поле';
+            delBtn.className = 'deleteFieldBtn';
+
             delBtn.onclick = () => { group.fields.splice(idx, 1); saveForms(); renderFormFields(); };
             fieldEl.appendChild(delBtn);
 
